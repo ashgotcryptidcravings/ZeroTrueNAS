@@ -28,6 +28,9 @@
 		AA000019 /* StatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000019 /* StatusBanner.swift */; };
 		AA000020 /* ImageViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000020 /* ImageViewerView.swift */; };
 		AA000021 /* TextViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000021 /* TextViewerView.swift */; };
+		AA000022 /* FullScreenImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000022 /* FullScreenImageViewer.swift */; };
+		AA000023 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000023 /* VideoPlayerView.swift */; };
+		AA000024 /* SkeletonList.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000024 /* SkeletonList.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
