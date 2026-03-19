@@ -10,7 +10,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.zerosworld.zerotruenas
       vars:
-        BUNDLE_ID: "com.zerosworld.zerotruenas"
+        BUNDLE_ID: "com.zerotruenas.app"
         XCODE_WORKSPACE: "ZeroTrueNAS.xcodeproj"
         XCODE_SCHEME: "ZeroTrueNAS"
     scripts:
