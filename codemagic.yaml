@@ -1,0 +1,29 @@
+workflows:
+  ios-workflow:
+    name: ZeroTrueNAS iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: worth
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.zerotruenas.app
+      vars:
+        BUNDLE_ID: "com.zerotruenas.app"
+        XCODE_PROJECT: "ZeroTrueNAS.xcodeproj"
+        XCODE_SCHEME: "ZeroTrueNAS"
+    scripts:
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
