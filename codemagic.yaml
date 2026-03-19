@@ -13,13 +13,13 @@ workflows:
         BUNDLE_ID: "com.zerotruenas.app"
         XCODE_WORKSPACE: "ZeroTrueNAS.xcodeproj"
         XCODE_SCHEME: "ZeroTrueNAS"
-    scripts:
+        scripts:
       - name: Set up code signing
         script: xcode-project use-profiles
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
