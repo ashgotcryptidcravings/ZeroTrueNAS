@@ -4,11 +4,11 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
-      app_store_connect: codemagic_key
+      app_store_connect: gQO-QZ92H1-2lxwQ38p7KkVPRt43bxkUAR0rl2fW45Y
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.zerosworld.zerotruenas
+        distribution_type: development
+        bundle_identifier: com.zerotruenas.app
       vars:
         BUNDLE_ID: "com.zerotruenas.app"
         XCODE_WORKSPACE: "ZeroTrueNAS.xcodeproj"
