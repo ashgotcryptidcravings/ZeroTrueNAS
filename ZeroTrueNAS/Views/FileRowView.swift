@@ -2,18 +2,30 @@ import SwiftUI
 
 struct FileRowView: View {
     let item: FileItem
+    @EnvironmentObject var service: TrueNASService
+
+    @State private var thumbnail: UIImage?
+    @State private var loadTask: Task<Void, Never>?
 
     var body: some View {
         HStack(spacing: 14) {
-            // File type icon
+            // File type icon or thumbnail
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(iconBackground)
                     .frame(width: 40, height: 40)
 
-                Image(systemName: item.iconName)
-                    .font(.system(size: 17))
-                    .foregroundColor(iconColor)
+                if let thumb = thumbnail {
+                    Image(uiImage: thumb)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    Image(systemName: item.iconName)
+                        .font(.system(size: 17))
+                        .foregroundColor(iconColor)
+                }
             }
 
             // File info
@@ -38,6 +50,20 @@ struct FileRowView: View {
 
             Spacer()
 
+            // Type badge for media files
+            if item.isVideo {
+                Text("VIDEO")
+                    .font(Theme.monoFont(8))
+                    .tracking(1)
+                    .foregroundColor(Theme.purple)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Theme.purple.opacity(0.12))
+                    )
+            }
+
             // Chevron for directories
             if item.isDirectory {
                 Image(systemName: "chevron.right")
@@ -49,12 +75,41 @@ struct FileRowView: View {
         .padding(.vertical, 10)
         .background(Theme.surface.opacity(0.01))
         .contentShape(Rectangle())
+        .task(id: item.id) {
+            await loadThumbnail()
+        }
+        .onDisappear {
+            loadTask?.cancel()
+            loadTask = nil
+        }
+    }
+
+    private func loadThumbnail() async {
+        guard item.isImage else { return }
+        // Check cache synchronously via actor
+        if let cached = await ThumbnailCache.shared.get(item.path) {
+            thumbnail = cached
+            return
+        }
+        // Fetch async
+        let task = Task.detached { [path = item.path] () -> UIImage? in
+            await service.fetchThumbnail(path: path)
+        }
+        loadTask = Task {
+            if let img = await task.value {
+                thumbnail = img
+            }
+        }
     }
 
     private var iconColor: Color {
         if item.isDirectory { return Theme.cyan }
         if item.isImage { return Theme.purple }
+        if item.isVideo { return Theme.purple }
+        if item.isAudio { return Theme.warning }
+        if item.isCode { return Theme.success }
         if item.isText { return Theme.success }
+        if item.isArchive { return Theme.textSecondary }
         return Theme.textSecondary
     }
 

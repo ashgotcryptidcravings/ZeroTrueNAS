@@ -28,6 +28,9 @@
 		AA000019 /* StatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000019; };
 		AA000020 /* ImageViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000020; };
 		AA000021 /* TextViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000021; };
+		AA000022 /* FullScreenImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000022; };
+		AA000023 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000023; };
+		AA000024 /* SkeletonList.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000024; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +56,9 @@
 		AB000019 /* StatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBanner.swift; sourceTree = "<group>"; };
 		AB000020 /* ImageViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViewerView.swift; sourceTree = "<group>"; };
 		AB000021 /* TextViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextViewerView.swift; sourceTree = "<group>"; };
+		AB000022 /* FullScreenImageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenImageViewer.swift; sourceTree = "<group>"; };
+		AB000023 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
+		AB000024 /* SkeletonList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonList.swift; sourceTree = "<group>"; };
 		AB000030 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -114,6 +120,9 @@
 				AB000015 /* GridOverlay.swift */,
 				AB000016 /* GlowModifier.swift */,
 				AB000019 /* StatusBanner.swift */,
+				AB000022 /* FullScreenImageViewer.swift */,
+				AB000023 /* VideoPlayerView.swift */,
+				AB000024 /* SkeletonList.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -233,6 +242,9 @@
 				AA000019 /* StatusBanner.swift in Sources */,
 				AA000020 /* ImageViewerView.swift in Sources */,
 				AA000021 /* TextViewerView.swift in Sources */,
+				AA000022 /* FullScreenImageViewer.swift in Sources */,
+				AA000023 /* VideoPlayerView.swift in Sources */,
+				AA000024 /* SkeletonList.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

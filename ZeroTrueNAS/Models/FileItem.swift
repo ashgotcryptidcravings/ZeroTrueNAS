@@ -95,15 +95,33 @@ struct FileItem: Identifiable, Codable, Hashable {
          "go", "rb", "php", "html", "css", "toml", "ini"].contains(fileExtension)
     }
 
+    var isVideo: Bool {
+        ["mp4", "mov", "m4v"].contains(fileExtension)
+    }
+
+    var isAudio: Bool {
+        ["mp3", "flac", "wav", "aac", "m4a", "ogg"].contains(fileExtension)
+    }
+
+    var isArchive: Bool {
+        ["zip", "tar", "gz", "7z", "rar", "bz2", "xz"].contains(fileExtension)
+    }
+
+    var isCode: Bool {
+        ["swift", "py", "js", "ts", "c", "h", "cpp", "rs", "go", "rb", "php",
+         "java", "kt", "sh", "bash", "zsh", "css", "html"].contains(fileExtension)
+    }
+
     var iconName: String {
         if isDirectory { return "folder.fill" }
         if isImage { return "photo.fill" }
+        if isVideo { return "film.fill" }
+        if isAudio { return "music.note" }
+        if isArchive { return "doc.zipper" }
+        if isCode { return "chevron.left.forwardslash.chevron.right" }
         if isText { return "doc.text.fill" }
         switch fileExtension {
         case "pdf": return "doc.richtext.fill"
-        case "zip", "tar", "gz", "7z", "rar": return "doc.zipper"
-        case "mp4", "mov", "avi", "mkv": return "film.fill"
-        case "mp3", "flac", "wav", "aac", "m4a": return "music.note"
         default: return "doc.fill"
         }
     }
