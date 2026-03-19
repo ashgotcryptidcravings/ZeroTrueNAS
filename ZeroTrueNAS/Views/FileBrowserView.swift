@@ -9,7 +9,7 @@ struct FileBrowserView: View {
     @State private var errorMessage: String?
     @State private var navigationStack: [String] = []
     @State private var selectedFile: FileItem?
-    @State private var showingDetail = false
+    @State private var loadTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -31,9 +31,7 @@ struct FileBrowserView: View {
 
                 // Content
                 if isLoading {
-                    Spacer()
-                    LoadingIndicator(label: "Scanning directory...")
-                    Spacer()
+                    SkeletonList(count: 8)
                 } else if let error = errorMessage {
                     Spacer()
                     errorView(error)
@@ -53,6 +51,9 @@ struct FileBrowserView: View {
         }
         .task {
             await loadDirectory()
+        }
+        .onDisappear {
+            loadTask?.cancel()
         }
     }
 
@@ -109,6 +110,7 @@ struct FileBrowserView: View {
                         handleFileTap(file)
                     } label: {
                         FileRowView(item: file)
+                            .environmentObject(service)
                     }
                     .buttonStyle(.plain)
 
@@ -179,20 +181,32 @@ struct FileBrowserView: View {
     }
 
     private func loadDirectory() async {
+        // Cancel any previous load
+        loadTask?.cancel()
+
         isLoading = true
         errorMessage = nil
 
-        do {
-            files = try await service.listDirectory(path: currentPath)
-        } catch {
-            errorMessage = error.localizedDescription
-            // Fall back to mock data if server unreachable
-            if service.useMockData {
-                files = FileItem.mockFiles
-                errorMessage = nil
+        let task = Task {
+            do {
+                let items = try await service.listDirectory(path: currentPath)
+                if !Task.isCancelled {
+                    files = items
+                }
+            } catch {
+                if !Task.isCancelled {
+                    errorMessage = error.localizedDescription
+                    if service.useMockData {
+                        files = FileItem.mockFiles
+                        errorMessage = nil
+                    }
+                }
+            }
+            if !Task.isCancelled {
+                isLoading = false
             }
         }
-
-        isLoading = false
+        loadTask = task
+        await task.value
     }
 }

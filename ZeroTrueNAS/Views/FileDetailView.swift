@@ -11,9 +11,10 @@ struct FileDetailView: View {
     @State private var errorMessage: String?
     @State private var showShareSheet = false
     @State private var tempFileURL: URL?
-    @State private var showImageViewer = false
-    @State private var showTextViewer = false
     @State private var textContent: String?
+    @State private var showFullScreenImage = false
+    @State private var showVideoPlayer = false
+    @State private var downloadTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -38,16 +39,14 @@ struct FileDetailView: View {
 
                 // Preview area
                 if file.isImage, let data = downloadedData {
-                    ImageViewerView(data: data, filename: file.name)
-                        .frame(maxHeight: 300)
-                        .padding(.horizontal)
+                    imagePreview(data: data)
                 } else if file.isText, let text = textContent {
                     TextViewerView(text: text, filename: file.name)
                         .frame(maxHeight: 400)
                         .padding(.horizontal)
                 } else if isDownloading {
                     Spacer()
-                    LoadingIndicator(label: "Downloading...")
+                    LoadingIndicator(label: file.isVideo ? "Preparing video..." : "Downloading...")
                     Spacer()
                 }
 
@@ -67,9 +66,56 @@ struct FileDetailView: View {
                 ShareSheet(activityItems: [url])
             }
         }
+        .fullScreenCover(isPresented: $showFullScreenImage) {
+            if let data = downloadedData {
+                FullScreenImageViewer(data: data, filename: file.name, fileSize: file.size)
+            }
+        }
+        .fullScreenCover(isPresented: $showVideoPlayer) {
+            if let url = tempFileURL {
+                VideoPlayerView(fileURL: url, filename: file.name)
+            }
+        }
         .task {
-            if file.isImage || file.isText {
-                await previewFile()
+            await autoPreview()
+        }
+        .onDisappear {
+            downloadTask?.cancel()
+        }
+    }
+
+    // MARK: - Image Preview (tappable to full-screen)
+
+    private func imagePreview(data: Data) -> some View {
+        Group {
+            if let uiImage = UIImage(data: data) {
+                Button {
+                    showFullScreenImage = true
+                } label: {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 280)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Theme.purple.opacity(0.3), lineWidth: 1)
+                        )
+                        .overlay(alignment: .bottomTrailing) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(6)
+                                .background(Circle().fill(.black.opacity(0.5)))
+                                .padding(8)
+                        }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+            } else {
+                ImageViewerView(data: data, filename: file.name)
+                    .frame(maxHeight: 300)
+                    .padding(.horizontal)
             }
         }
     }
@@ -108,24 +154,45 @@ struct FileDetailView: View {
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
-            // Download & Save
-            Button {
-                Task { await downloadAndSave() }
-            } label: {
-                HStack(spacing: 8) {
-                    if isDownloading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: Theme.background))
-                            .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: "arrow.down.circle.fill")
+            // Primary action depends on file type
+            if file.isImage || file.isVideo {
+                Button {
+                    Task { await openMedia() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Theme.background))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: file.isVideo ? "play.circle.fill" : "arrow.up.left.and.arrow.down.right")
+                        }
+                        Text(file.isVideo ? "PLAY" : "VIEW FULL SCREEN")
                     }
-                    Text(isDownloading ? "DOWNLOADING..." : "DOWNLOAD")
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(CyanButtonStyle())
+                .disabled(isDownloading)
+            } else {
+                // Download
+                Button {
+                    Task { await downloadAndSave() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Theme.background))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "arrow.down.circle.fill")
+                        }
+                        Text(isDownloading ? "DOWNLOADING..." : "DOWNLOAD")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CyanButtonStyle())
+                .disabled(isDownloading)
             }
-            .buttonStyle(CyanButtonStyle())
-            .disabled(isDownloading)
 
             HStack(spacing: 12) {
                 // Share
@@ -140,14 +207,14 @@ struct FileDetailView: View {
                 }
                 .buttonStyle(GhostButtonStyle())
 
-                // View inline (if applicable)
-                if file.isImage || file.isText {
+                // Download (for media that has View as primary)
+                if file.isImage || file.isVideo {
                     Button {
-                        Task { await previewFile() }
+                        Task { await downloadAndSave() }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "eye.fill")
-                            Text("PREVIEW")
+                            Image(systemName: "arrow.down.circle")
+                            Text("SAVE")
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -161,17 +228,67 @@ struct FileDetailView: View {
 
     // MARK: - File Operations
 
-    private func previewFile() async {
+    private func autoPreview() async {
+        if file.isImage || file.isText {
+            await fetchFileData()
+        }
+    }
+
+    private func fetchFileData() async {
+        isDownloading = true
+        errorMessage = nil
+
+        let task = Task {
+            do {
+                let (data, _) = try await service.downloadFile(path: file.path)
+                if !Task.isCancelled {
+                    downloadedData = data
+                    if file.isText {
+                        textContent = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii)
+                    }
+                }
+            } catch {
+                if !Task.isCancelled {
+                    errorMessage = error.localizedDescription
+                }
+            }
+            if !Task.isCancelled {
+                isDownloading = false
+            }
+        }
+        downloadTask = task
+        await task.value
+    }
+
+    private func openMedia() async {
+        if file.isImage {
+            if downloadedData == nil {
+                await fetchFileData()
+            }
+            if downloadedData != nil {
+                showFullScreenImage = true
+            }
+        } else if file.isVideo {
+            if tempFileURL == nil {
+                await downloadToTemp()
+            }
+            if tempFileURL != nil {
+                showVideoPlayer = true
+            }
+        }
+    }
+
+    private func downloadToTemp() async {
         isDownloading = true
         errorMessage = nil
 
         do {
-            let (data, _) = try await service.downloadFile(path: file.path)
+            let (data, filename) = try await service.downloadFile(path: file.path)
             downloadedData = data
-
-            if file.isText {
-                textContent = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii)
-            }
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileURL = tempDir.appendingPathComponent(filename)
+            try data.write(to: fileURL)
+            tempFileURL = fileURL
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -180,36 +297,25 @@ struct FileDetailView: View {
     }
 
     private func downloadAndSave() async {
-        isDownloading = true
-        errorMessage = nil
-
-        do {
-            let (data, filename) = try await service.downloadFile(path: file.path)
-            downloadedData = data
-
-            let tempDir = FileManager.default.temporaryDirectory
-            let fileURL = tempDir.appendingPathComponent(filename)
-            try data.write(to: fileURL)
-            tempFileURL = fileURL
-            showShareSheet = true
-        } catch {
-            errorMessage = error.localizedDescription
+        if tempFileURL == nil {
+            await downloadToTemp()
         }
-
-        isDownloading = false
+        if tempFileURL != nil {
+            showShareSheet = true
+        }
     }
 
     private func shareFile() async {
-        if let url = tempFileURL {
+        if tempFileURL != nil {
             showShareSheet = true
             return
         }
-
         await downloadAndSave()
     }
 
     private var iconColor: Color {
         if file.isImage { return Theme.purple }
+        if file.isVideo { return Theme.purple }
         if file.isText { return Theme.success }
         return Theme.cyan
     }
