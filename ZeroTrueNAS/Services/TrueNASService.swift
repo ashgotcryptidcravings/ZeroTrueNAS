@@ -192,9 +192,6 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-<<<<<<< HEAD
-        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/get/") else {
-=======
         // TrueNAS file download: GET with path as query parameter, returns raw binary
         guard var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/get/") else {
             throw TrueNASError.invalidURL
@@ -202,28 +199,16 @@ class TrueNASService: ObservableObject {
         components.queryItems = [URLQueryItem(name: "path", value: path)]
 
         guard let url = components.url else {
->>>>>>> 0742bc2f2ae9e96840a46fcde903ea2881c0d8b4
             throw TrueNASError.invalidURL
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-<<<<<<< HEAD
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
-=======
->>>>>>> 0742bc2f2ae9e96840a46fcde903ea2881c0d8b4
 
         do {
             let (data, response) = try await session.data(for: request)
 
-<<<<<<< HEAD
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            let message = String(data: data, encoding: .utf8)
-            throw TrueNASError.httpError(code, message ?? "Download failed")
-=======
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? 0
                 throw TrueNASError.httpError(code, "Download failed")
@@ -242,7 +227,6 @@ class TrueNASService: ObservableObject {
         // Check cache first
         if let cached = await ThumbnailCache.shared.get(path) {
             return cached
->>>>>>> 0742bc2f2ae9e96840a46fcde903ea2881c0d8b4
         }
 
         guard let (data, _) = try? await downloadFile(path: path) else { return nil }
