@@ -62,6 +62,17 @@ struct FileRowView: View {
                         RoundedRectangle(cornerRadius: 3)
                             .fill(Theme.purple.opacity(0.12))
                     )
+            } else if item.isAudio {
+                Text("AUDIO")
+                    .font(Theme.monoFont(8))
+                    .tracking(1)
+                    .foregroundColor(Theme.warning)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Theme.warning.opacity(0.12))
+                    )
             }
 
             // Chevron for directories

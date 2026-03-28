@@ -100,7 +100,8 @@ struct FileItem: Identifiable, Codable, Hashable {
     }
 
     var isAudio: Bool {
-        ["mp3", "flac", "wav", "aac", "m4a", "ogg"].contains(fileExtension)
+        ["mp3", "flac", "wav", "aac", "m4a", "ogg", "aiff", "aif", "alac",
+         "wma", "opus", "caf", "mp2", "ac3"].contains(fileExtension)
     }
 
     var isArchive: Bool {

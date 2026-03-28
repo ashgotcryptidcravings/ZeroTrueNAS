@@ -14,6 +14,9 @@ struct FileDetailView: View {
     @State private var textContent: String?
     @State private var showFullScreenImage = false
     @State private var showVideoPlayer = false
+    @State private var showAudioPlayer = false
+    @State private var showTextEditor = false
+    @State private var showImageCrop = false
     @State private var downloadTask: Task<Void, Never>?
 
     var body: some View {
@@ -44,6 +47,8 @@ struct FileDetailView: View {
                     TextViewerView(text: text, filename: file.name)
                         .frame(maxHeight: 400)
                         .padding(.horizontal)
+                } else if file.isAudio {
+                    audioPreviewPlaceholder
                 } else if isDownloading {
                     Spacer()
                     LoadingIndicator(label: file.isVideo ? "Preparing video..." : "Downloading...")
@@ -76,12 +81,56 @@ struct FileDetailView: View {
                 VideoPlayerView(fileURL: url, filename: file.name)
             }
         }
+        .fullScreenCover(isPresented: $showAudioPlayer) {
+            if let url = tempFileURL {
+                AudioPlayerView(fileURL: url, filename: file.name, fileSize: file.size)
+            }
+        }
+        .fullScreenCover(isPresented: $showTextEditor) {
+            if let text = textContent {
+                TextEditorView(filePath: file.path, filename: file.name, text: text)
+                    .environmentObject(service)
+            }
+        }
+        .fullScreenCover(isPresented: $showImageCrop) {
+            if let data = downloadedData {
+                ImageCropView(imageData: data, filePath: file.path, filename: file.name)
+                    .environmentObject(service)
+            }
+        }
         .task {
             await autoPreview()
         }
         .onDisappear {
             downloadTask?.cancel()
         }
+    }
+
+    // MARK: - Audio Preview Placeholder
+
+    private var audioPreviewPlaceholder: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Theme.warning.opacity(0.1))
+                    .frame(width: 80, height: 80)
+
+                Image(systemName: "music.note")
+                    .font(.system(size: 32))
+                    .foregroundColor(Theme.warning)
+            }
+            .glow(color: Theme.warning, radius: 8)
+
+            Text(file.fileExtension.uppercased())
+                .font(Theme.monoFont(13))
+                .tracking(2)
+                .foregroundColor(Theme.textSecondary)
+
+            if isDownloading {
+                LoadingIndicator(label: "Loading audio...")
+            }
+        }
+        .padding(.vertical, 20)
     }
 
     // MARK: - Image Preview (tappable to full-screen)
@@ -155,7 +204,25 @@ struct FileDetailView: View {
     private var actionButtons: some View {
         VStack(spacing: 12) {
             // Primary action depends on file type
-            if file.isImage || file.isVideo {
+            if file.isAudio {
+                Button {
+                    Task { await openAudio() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Theme.background))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "play.circle.fill")
+                        }
+                        Text(isDownloading ? "LOADING..." : "PLAY AUDIO")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CyanButtonStyle())
+                .disabled(isDownloading)
+            } else if file.isImage || file.isVideo {
                 Button {
                     Task { await openMedia() }
                 } label: {
@@ -173,6 +240,24 @@ struct FileDetailView: View {
                 }
                 .buttonStyle(CyanButtonStyle())
                 .disabled(isDownloading)
+            } else if file.isText {
+                Button {
+                    Task { await openTextEditor() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Theme.background))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "pencil.line")
+                        }
+                        Text(isDownloading ? "LOADING..." : "EDIT FILE")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CyanButtonStyle())
+                .disabled(isDownloading || textContent == nil)
             } else {
                 // Download
                 Button {
@@ -207,8 +292,22 @@ struct FileDetailView: View {
                 }
                 .buttonStyle(GhostButtonStyle())
 
-                // Download (for media that has View as primary)
-                if file.isImage || file.isVideo {
+                // Crop for images
+                if file.isImage {
+                    Button {
+                        Task { await openImageCrop() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "crop")
+                            Text("CROP")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(GhostButtonStyle())
+                }
+
+                // Download (for media that has View/Play/Edit as primary)
+                if file.isImage || file.isVideo || file.isAudio || file.isText {
                     Button {
                         Task { await downloadAndSave() }
                     } label: {
@@ -278,6 +377,33 @@ struct FileDetailView: View {
         }
     }
 
+    private func openAudio() async {
+        if tempFileURL == nil {
+            await downloadToTemp()
+        }
+        if tempFileURL != nil {
+            showAudioPlayer = true
+        }
+    }
+
+    private func openTextEditor() async {
+        if textContent == nil {
+            await fetchFileData()
+        }
+        if textContent != nil {
+            showTextEditor = true
+        }
+    }
+
+    private func openImageCrop() async {
+        if downloadedData == nil {
+            await fetchFileData()
+        }
+        if downloadedData != nil {
+            showImageCrop = true
+        }
+    }
+
     private func downloadToTemp() async {
         isDownloading = true
         errorMessage = nil
@@ -316,6 +442,7 @@ struct FileDetailView: View {
     private var iconColor: Color {
         if file.isImage { return Theme.purple }
         if file.isVideo { return Theme.purple }
+        if file.isAudio { return Theme.warning }
         if file.isText { return Theme.success }
         return Theme.cyan
     }

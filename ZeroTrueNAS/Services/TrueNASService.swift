@@ -82,6 +82,30 @@ class TrueNASService: ObservableObject {
         activeTasks[scope] = task
     }
 
+    // MARK: - Request Helpers
+
+    /// Build a GET request (for no-argument endpoints like system/info)
+    private func getRequest(endpoint: String, key: String) -> URLRequest? {
+        guard let url = URL(string: "\(ServerConfig.baseURL)/\(endpoint)") else { return nil }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        return request
+    }
+
+    /// Build a POST request with JSON array body (for endpoints that take positional args)
+    private func postRequest(endpoint: String, key: String, args: [Any]) throws -> URLRequest {
+        guard let url = URL(string: "\(ServerConfig.baseURL)/\(endpoint)") else {
+            throw TrueNASError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: args)
+        return request
+    }
+
     // MARK: - Auth
 
     func authenticate(apiKey: String, serverAddress: String) async -> Bool {
@@ -90,16 +114,11 @@ class TrueNASService: ObservableObject {
 
         ServerConfig.savedAddress = serverAddress
 
-        guard let url = URL(string: "\(ServerConfig.baseURL)/system/info") else {
+        guard let request = getRequest(endpoint: "system/info", key: apiKey) else {
             connectionError = "Invalid server address"
             isConnecting = false
             return false
         }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         do {
             let (_, response) = try await session.data(for: request)
@@ -149,15 +168,7 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/listdir/") else {
-            throw TrueNASError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
+        let request = try postRequest(endpoint: "filesystem/listdir", key: key, args: [path])
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -194,19 +205,8 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        // TrueNAS file download: GET with path as query parameter, returns raw binary
-        guard var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/get/") else {
-            throw TrueNASError.invalidURL
-        }
-        components.queryItems = [URLQueryItem(name: "path", value: path)]
-
-        guard let url = components.url else {
-            throw TrueNASError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        // TrueNAS filesystem/get: POST with path as positional arg
+        let request = try postRequest(endpoint: "filesystem/get", key: key, args: [path])
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -218,6 +218,55 @@ class TrueNASService: ObservableObject {
 
             let filename = (path as NSString).lastPathComponent
             return (data, filename)
+        } catch let error as TrueNASError {
+            throw error
+        } catch {
+            throw TrueNASError.networkError(error)
+        }
+    }
+
+    func uploadFile(path: String, data: Data) async throws {
+        guard let key = apiKey else { throw TrueNASError.noAPIKey }
+        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/put") else {
+            throw TrueNASError.invalidURL
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        // JSON params part: [path, {}]
+        let params = try JSONSerialization.data(withJSONObject: [path, ["mode": nil] as [String: Any?]])
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"data\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/json\r\n\r\n".data(using: .utf8)!)
+        body.append(params)
+        body.append("\r\n".data(using: .utf8)!)
+
+        // File data part
+        let filename = (path as NSString).lastPathComponent
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n".data(using: .utf8)!)
+
+        // Closing boundary
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        do {
+            let (responseData, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                let message = String(data: responseData, encoding: .utf8)
+                throw TrueNASError.httpError(code, message ?? "Upload failed")
+            }
         } catch let error as TrueNASError {
             throw error
         } catch {
@@ -249,15 +298,7 @@ class TrueNASService: ObservableObject {
     func getFileStat(path: String) async throws -> FileItem {
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/stat/") else {
-            throw TrueNASError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
+        let request = try postRequest(endpoint: "filesystem/stat", key: key, args: [path])
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -270,12 +311,7 @@ class TrueNASService: ObservableObject {
 
     func testConnection() async -> Bool {
         guard let key = apiKey else { return false }
-        guard let url = URL(string: "\(ServerConfig.baseURL)/system/info") else { return false }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        guard var request = getRequest(endpoint: "system/info", key: key) else { return false }
         request.timeoutInterval = 5
 
         do {
