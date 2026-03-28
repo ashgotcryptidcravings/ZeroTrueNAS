@@ -24,12 +24,20 @@ struct AudioPlayerView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Handle bar
-                Capsule()
-                    .fill(Theme.surfaceLight)
-                    .frame(width: 36, height: 4)
-                    .padding(.top, 12)
-                    .padding(.bottom, 24)
+                // Top bar with close button
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Circle().fill(Theme.surfaceLight))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
 
                 Spacer()
 

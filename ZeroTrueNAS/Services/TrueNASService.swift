@@ -252,18 +252,18 @@ class TrueNASService: ObservableObject {
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
+        let filename = (path as NSString).lastPathComponent
         var body = Data()
 
-        // JSON params part: [path, {}]
-        let params = try JSONSerialization.data(withJSONObject: [path, ["mode": nil] as [String: Any?]])
+        // JSON metadata part — bare path string, same format as filesystem/get
+        let pathJSON = try JSONEncoder().encode(path)
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"data\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/json\r\n\r\n".data(using: .utf8)!)
-        body.append(params)
+        body.append(pathJSON)
         body.append("\r\n".data(using: .utf8)!)
 
         // File data part
-        let filename = (path as NSString).lastPathComponent
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
