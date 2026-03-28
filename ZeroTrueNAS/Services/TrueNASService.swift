@@ -204,38 +204,35 @@ class TrueNASService: ObservableObject {
         }
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
+        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/get") else {
+            throw TrueNASError.invalidURL
+        }
 
-        // Try POST with path in JSON body first
-        let postReq = try postRequest(endpoint: "filesystem/get", key: key, body: ["path": path])
+        // TrueNAS expects a bare JSON string as the body, e.g. "/mnt/pool/file.txt"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(path)
 
         do {
-            let (data, response) = try await session.data(for: postReq)
-            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let (data, response) = try await session.data(for: request)
+            let httpResponse = response as? HTTPURLResponse
+            let code = httpResponse?.statusCode ?? 0
 
-            if code == 200 {
-                return (data, (path as NSString).lastPathComponent)
+            guard code == 200 else {
+                let message = String(data: data, encoding: .utf8)
+                throw TrueNASError.httpError(code, message)
             }
 
-            // POST failed — fall back to GET with query param
-            guard var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/get") else {
-                throw TrueNASError.invalidURL
-            }
-            components.queryItems = [URLQueryItem(name: "path", value: path)]
-            guard let url = components.url else { throw TrueNASError.invalidURL }
-
-            var getReq = URLRequest(url: url)
-            getReq.httpMethod = "GET"
-            getReq.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-
-            let (getData, getResponse) = try await session.data(for: getReq)
-            let getCode = (getResponse as? HTTPURLResponse)?.statusCode ?? 0
-
-            guard getCode == 200 else {
-                let message = String(data: getData, encoding: .utf8)
-                throw TrueNASError.httpError(getCode, message)
+            // If the server returned JSON instead of file bytes, it's an error payload
+            if let contentType = httpResponse?.value(forHTTPHeaderField: "Content-Type"),
+               contentType.contains("application/json") {
+                let message = String(data: data, encoding: .utf8)
+                throw TrueNASError.httpError(code, message ?? "Server returned JSON instead of file data")
             }
 
-            return (getData, (path as NSString).lastPathComponent)
+            return (data, (path as NSString).lastPathComponent)
         } catch let error as TrueNASError {
             throw error
         } catch {
