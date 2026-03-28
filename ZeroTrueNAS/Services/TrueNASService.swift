@@ -205,19 +205,37 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        // TrueNAS filesystem/get: POST with path as positional arg
-        let request = try postRequest(endpoint: "filesystem/get", key: key, body: ["path": path])
+        // Try POST with path in JSON body first
+        let postReq = try postRequest(endpoint: "filesystem/get", key: key, body: ["path": path])
 
         do {
-            let (data, response) = try await session.data(for: request)
+            let (data, response) = try await session.data(for: postReq)
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
 
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-                throw TrueNASError.httpError(code, "Download failed")
+            if code == 200 {
+                return (data, (path as NSString).lastPathComponent)
             }
 
-            let filename = (path as NSString).lastPathComponent
-            return (data, filename)
+            // POST failed — fall back to GET with query param
+            guard var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/get") else {
+                throw TrueNASError.invalidURL
+            }
+            components.queryItems = [URLQueryItem(name: "path", value: path)]
+            guard let url = components.url else { throw TrueNASError.invalidURL }
+
+            var getReq = URLRequest(url: url)
+            getReq.httpMethod = "GET"
+            getReq.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+
+            let (getData, getResponse) = try await session.data(for: getReq)
+            let getCode = (getResponse as? HTTPURLResponse)?.statusCode ?? 0
+
+            guard getCode == 200 else {
+                let message = String(data: getData, encoding: .utf8)
+                throw TrueNASError.httpError(getCode, message)
+            }
+
+            return (getData, (path as NSString).lastPathComponent)
         } catch let error as TrueNASError {
             throw error
         } catch {
@@ -303,7 +321,8 @@ class TrueNASService: ObservableObject {
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            throw TrueNASError.httpError(code, nil)
+            let message = String(data: data, encoding: .utf8)
+            throw TrueNASError.httpError(code, message)
         }
 
         return try JSONDecoder().decode(FileItem.self, from: data)
