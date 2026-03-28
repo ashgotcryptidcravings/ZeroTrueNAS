@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 enum TrueNASError: LocalizedError {
     case noAPIKey
@@ -27,6 +28,27 @@ enum TrueNASError: LocalizedError {
     }
 }
 
+// MARK: - Thumbnail Cache
+
+actor ThumbnailCache {
+    static let shared = ThumbnailCache()
+    private var cache = NSCache<NSString, UIImage>()
+
+    private init() {
+        cache.countLimit = 200
+        cache.totalCostLimit = 50 * 1024 * 1024 // 50MB
+    }
+
+    func get(_ key: String) -> UIImage? {
+        cache.object(forKey: key as NSString)
+    }
+
+    func set(_ key: String, image: UIImage) {
+        let cost = Int(image.size.width * image.size.height * 4)
+        cache.setObject(image, forKey: key as NSString, cost: cost)
+    }
+}
+
 @MainActor
 class TrueNASService: ObservableObject {
     @Published var isAuthenticated = false
@@ -36,6 +58,7 @@ class TrueNASService: ObservableObject {
 
     private var apiKey: String?
     private let session: URLSession
+    private var activeTasks: [String: Task<Void, Never>] = [:]
 
     init() {
         let config = URLSessionConfiguration.default
@@ -47,6 +70,16 @@ class TrueNASService: ObservableObject {
         if let savedKey = KeychainHelper.loadAPIKey() {
             self.apiKey = savedKey
         }
+    }
+
+    func cancelTasks(for scope: String) {
+        activeTasks[scope]?.cancel()
+        activeTasks.removeValue(forKey: scope)
+    }
+
+    func trackTask(_ scope: String, task: Task<Void, Never>) {
+        activeTasks[scope]?.cancel()
+        activeTasks[scope] = task
     }
 
     // MARK: - Auth
@@ -159,26 +192,72 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
+<<<<<<< HEAD
         guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/get/") else {
+=======
+        // TrueNAS file download: GET with path as query parameter, returns raw binary
+        guard var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/get/") else {
+            throw TrueNASError.invalidURL
+        }
+        components.queryItems = [URLQueryItem(name: "path", value: path)]
+
+        guard let url = components.url else {
+>>>>>>> 0742bc2f2ae9e96840a46fcde903ea2881c0d8b4
             throw TrueNASError.invalidURL
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "GET"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+<<<<<<< HEAD
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
+=======
+>>>>>>> 0742bc2f2ae9e96840a46fcde903ea2881c0d8b4
 
-        let (data, response) = try await session.data(for: request)
+        do {
+            let (data, response) = try await session.data(for: request)
 
+<<<<<<< HEAD
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
             let message = String(data: data, encoding: .utf8)
             throw TrueNASError.httpError(code, message ?? "Download failed")
+=======
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                throw TrueNASError.httpError(code, "Download failed")
+            }
+
+            let filename = (path as NSString).lastPathComponent
+            return (data, filename)
+        } catch let error as TrueNASError {
+            throw error
+        } catch {
+            throw TrueNASError.networkError(error)
+        }
+    }
+
+    func fetchThumbnail(path: String, maxSize: CGFloat = 80) async -> UIImage? {
+        // Check cache first
+        if let cached = await ThumbnailCache.shared.get(path) {
+            return cached
+>>>>>>> 0742bc2f2ae9e96840a46fcde903ea2881c0d8b4
         }
 
-        let filename = (path as NSString).lastPathComponent
-        return (data, filename)
+        guard let (data, _) = try? await downloadFile(path: path) else { return nil }
+        guard let full = UIImage(data: data) else { return nil }
+
+        // Downscale for thumbnail
+        let scale = min(maxSize / full.size.width, maxSize / full.size.height, 1.0)
+        let newSize = CGSize(width: full.size.width * scale, height: full.size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let thumb = renderer.image { _ in
+            full.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+
+        await ThumbnailCache.shared.set(path, image: thumb)
+        return thumb
     }
 
     func getFileStat(path: String) async throws -> FileItem {

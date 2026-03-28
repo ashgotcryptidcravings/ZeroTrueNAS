@@ -13,9 +13,13 @@ workflows:
         BUNDLE_ID: "com.zerotruenas.app"
         XCODE_PROJECT: "ZeroTrueNAS.xcodeproj"
         XCODE_SCHEME: "ZeroTrueNAS"
+        APP_STORE_ID: "6760803356"
     scripts:
       - name: Set up code signing
         script: xcode-project use-profiles
+      - name: Increment build number
+        script: |
+          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_ID") + 1))
       - name: Build IPA
         script: |
           xcode-project build-ipa \
