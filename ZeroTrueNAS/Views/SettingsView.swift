@@ -199,10 +199,10 @@ struct SettingsView: View {
                     Spacer()
                 }
 
-                VStack(spacing: 4) {
+                VStack(spacing: 5) {
                     aboutRow("App", "ZeroTrueNAS v4.0")
                     aboutRow("Update Info", "Fixed file Editing and Audio Viewing.")
-                    aboutRow("Target", "TrueNAS Scale")
+                    aboutRow("Target", "TrueNAS Goldeye")
                     aboutRow("API", "REST v2.0")
                     aboutRow("Server", ServerConfig.savedAddress)
                 }
