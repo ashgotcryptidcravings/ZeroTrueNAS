@@ -200,7 +200,7 @@ struct SettingsView: View {
                 }
 
                 VStack(spacing: 4) {
-                    aboutRow("App", "ZeroTrueNAS v3.2")
+                    aboutRow("App", "ZeroTrueNAS v3.3")
                     aboutRow("Target", "TrueNAS Scale")
                     aboutRow("API", "REST v2.0")
                     aboutRow("Server", ServerConfig.savedAddress)
