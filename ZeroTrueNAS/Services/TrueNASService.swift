@@ -93,8 +93,8 @@ class TrueNASService: ObservableObject {
         return request
     }
 
-    /// Build a POST request with JSON array body (for endpoints that take positional args)
-    private func postRequest(endpoint: String, key: String, args: [Any]) throws -> URLRequest {
+    /// Build a POST request with a JSON body (dict or array)
+    private func postRequest(endpoint: String, key: String, body: Any) throws -> URLRequest {
         guard let url = URL(string: "\(ServerConfig.baseURL)/\(endpoint)") else {
             throw TrueNASError.invalidURL
         }
@@ -102,7 +102,7 @@ class TrueNASService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: args)
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return request
     }
 
@@ -168,7 +168,7 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        let request = try postRequest(endpoint: "filesystem/listdir", key: key, args: [path])
+        let request = try postRequest(endpoint: "filesystem/listdir", key: key, body: ["path": path])
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -206,7 +206,7 @@ class TrueNASService: ObservableObject {
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
         // TrueNAS filesystem/get: POST with path as positional arg
-        let request = try postRequest(endpoint: "filesystem/get", key: key, args: [path])
+        let request = try postRequest(endpoint: "filesystem/get", key: key, body: ["path": path])
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -298,7 +298,7 @@ class TrueNASService: ObservableObject {
     func getFileStat(path: String) async throws -> FileItem {
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        let request = try postRequest(endpoint: "filesystem/stat", key: key, args: [path])
+        let request = try postRequest(endpoint: "filesystem/stat", key: key, body: ["path": path])
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
