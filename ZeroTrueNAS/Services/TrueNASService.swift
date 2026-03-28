@@ -97,7 +97,9 @@ class TrueNASService: ObservableObject {
         }
 
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         do {
             let (_, response) = try await session.data(for: request)
@@ -147,15 +149,15 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/listdir/")
-        components?.queryItems = [URLQueryItem(name: "path", value: path)]
-        guard let url = components?.url else {
+        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/listdir/") else {
             throw TrueNASError.invalidURL
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -247,15 +249,15 @@ class TrueNASService: ObservableObject {
     func getFileStat(path: String) async throws -> FileItem {
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/stat/")
-        components?.queryItems = [URLQueryItem(name: "path", value: path)]
-        guard let url = components?.url else {
+        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/stat/") else {
             throw TrueNASError.invalidURL
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -271,7 +273,9 @@ class TrueNASService: ObservableObject {
         guard let url = URL(string: "\(ServerConfig.baseURL)/system/info") else { return false }
 
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 5
 
         do {
