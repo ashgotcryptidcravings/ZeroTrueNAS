@@ -113,17 +113,16 @@ class TrueNASService: ObservableObject {
         if useMockData { return FileItem.mockFiles }
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
-        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/listdir") else {
+
+        var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/listdir/")
+        components?.queryItems = [URLQueryItem(name: "path", value: path)]
+        guard let url = components?.url else {
             throw TrueNASError.invalidURL
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "GET"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body: [String: Any] = ["path": path]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -160,8 +159,7 @@ class TrueNASService: ObservableObject {
 
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
 
-        // TrueNAS download endpoint
-        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/get") else {
+        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/get/") else {
             throw TrueNASError.invalidURL
         }
 
@@ -169,13 +167,14 @@ class TrueNASService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: path)
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["path": path])
 
         let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            throw TrueNASError.httpError(code, "Download failed")
+            let message = String(data: data, encoding: .utf8)
+            throw TrueNASError.httpError(code, message ?? "Download failed")
         }
 
         let filename = (path as NSString).lastPathComponent
@@ -184,15 +183,16 @@ class TrueNASService: ObservableObject {
 
     func getFileStat(path: String) async throws -> FileItem {
         guard let key = apiKey else { throw TrueNASError.noAPIKey }
-        guard let url = URL(string: "\(ServerConfig.baseURL)/filesystem/stat") else {
+
+        var components = URLComponents(string: "\(ServerConfig.baseURL)/filesystem/stat/")
+        components?.queryItems = [URLQueryItem(name: "path", value: path)]
+        guard let url = components?.url else {
             throw TrueNASError.invalidURL
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "GET"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: path)
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
