@@ -23,13 +23,11 @@ struct FileDetailView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
-            GridOverlay(lineSpacing: 48, lineOpacity: 0.02)
-                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Handle bar
                 Capsule()
-                    .fill(Theme.surfaceLight)
+                    .fill(Theme.textMuted)
                     .frame(width: 36, height: 4)
                     .padding(.top, 12)
                     .padding(.bottom, 20)
@@ -153,17 +151,13 @@ struct FileDetailView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxHeight: 280)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Theme.purple.opacity(0.3), lineWidth: 1)
-                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(alignment: .bottomTrailing) {
                             Image(systemName: "arrow.up.left.and.arrow.down.right")
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(6)
-                                .background(Circle().fill(.black.opacity(0.5)))
+                                .glassEffect(.regular, in: .circle)
                                 .padding(8)
                         }
                 }
@@ -183,14 +177,14 @@ struct FileDetailView: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(iconColor.opacity(0.1))
+                    .fill(.clear)
                     .frame(width: 64, height: 64)
+                    .glassEffect(.regular.tint(iconColor.opacity(0.1)), in: .circle)
 
                 Image(systemName: file.iconName)
                     .font(.system(size: 28))
                     .foregroundColor(iconColor)
             }
-            .glow(color: iconColor, radius: 8)
 
             Text(file.name)
                 .font(Theme.monoFont(16))
@@ -442,13 +436,8 @@ struct FileDetailView: View {
     private func pdfPreview(data: Data) -> some View {
         VStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Theme.surface)
+                Color.clear
                     .frame(height: 200)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Theme.cyan.opacity(0.2), lineWidth: 1)
-                    )
 
                 VStack(spacing: 8) {
                     Image(systemName: "doc.richtext.fill")
@@ -464,6 +453,7 @@ struct FileDetailView: View {
                         .foregroundColor(Theme.textMuted)
                 }
             }
+            .glassEffect(.regular.tint(Theme.cyan.opacity(0.05)), in: .rect(cornerRadius: 16))
             .padding(.horizontal)
             .onTapGesture {
                 showPDFViewer = true

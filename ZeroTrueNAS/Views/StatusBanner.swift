@@ -39,14 +39,7 @@ struct StatusBanner: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(type.color.opacity(0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(type.color.opacity(0.3), lineWidth: 1)
-                )
-        )
+        .glassEffect(.regular.tint(type.color.opacity(0.1)), in: .rect(cornerRadius: 12))
         .padding(.horizontal)
     }
 }
@@ -73,7 +66,6 @@ struct LoadingIndicator: View {
                         }
                     }
             }
-            .glow(radius: 4)
 
             Text(label)
                 .font(Theme.monoFont(12))

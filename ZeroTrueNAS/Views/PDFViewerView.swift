@@ -22,7 +22,7 @@ struct PDFViewerView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(10)
-                            .background(Circle().fill(Theme.surfaceLight))
+                            .glassEffect(.regular, in: .circle)
                     }
 
                     Spacer()
@@ -40,10 +40,7 @@ struct PDFViewerView: View {
                             .foregroundColor(Theme.cyan)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Theme.surfaceDark)
-                            )
+                            .glassEffect(.regular.tint(Theme.cyan.opacity(0.05)), in: .capsule)
                     }
                 }
                 .padding(.horizontal, 16)

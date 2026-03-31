@@ -33,9 +33,10 @@ struct ContentView: View {
         VStack(spacing: 20) {
             ZStack {
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Theme.cyan.opacity(0.3), lineWidth: 1)
+                    .fill(.clear)
                     .frame(width: 80, height: 80)
                     .rotationEffect(.degrees(45))
+                    .glassEffect(.regular.tint(Theme.cyan.opacity(0.1)), in: .rect(cornerRadius: 16))
 
                 Image(systemName: "externaldrive.connected.to.line.below.fill")
                     .font(.system(size: 32, weight: .light))

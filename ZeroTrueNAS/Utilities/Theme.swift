@@ -1,11 +1,11 @@
 import SwiftUI
 
 enum Theme {
-    // Core palette
-    static let background = Color(red: 0.039, green: 0.039, blue: 0.059)        // #0a0a0f
-    static let surfaceDark = Color(red: 0.059, green: 0.059, blue: 0.086)        // #0f0f16
-    static let surface = Color(red: 0.078, green: 0.078, blue: 0.118)            // #14141e
-    static let surfaceLight = Color(red: 0.110, green: 0.110, blue: 0.157)       // #1c1c28
+    // Core palette — OLED black
+    static let background = Color.black                                          // #000000
+    static let surfaceDark = Color(white: 0.04)                                  // #0a0a0a
+    static let surface = Color(white: 0.07)                                      // #121212
+    static let surfaceLight = Color(white: 0.14)                                 // #242424
 
     // Accents
     static let cyan = Color(red: 0.0, green: 0.961, blue: 1.0)                  // #00f5ff
@@ -35,11 +35,6 @@ enum Theme {
     static func bodyFont(_ size: CGFloat) -> Font {
         .system(size: size, weight: .regular, design: .default)
     }
-
-    // Glow shadow
-    static func glowShadow(color: Color = cyan, radius: CGFloat = 8) -> some View {
-        Color.clear.shadow(color: color.opacity(0.6), radius: radius)
-    }
 }
 
 // MARK: - Styled Button
@@ -54,11 +49,8 @@ struct CyanButtonStyle: ButtonStyle {
             .foregroundColor(Theme.background)
             .padding(.horizontal, isCompact ? 16 : 24)
             .padding(.vertical, isCompact ? 8 : 14)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Theme.cyan)
-                    .shadow(color: Theme.cyan.opacity(0.4), radius: configuration.isPressed ? 2 : 10)
-            )
+            .background(Theme.cyan, in: RoundedRectangle(cornerRadius: 12))
+            .glassEffect(.regular.tint(Theme.cyan.opacity(0.3)), in: .rect(cornerRadius: 12))
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
@@ -71,14 +63,7 @@ struct GhostButtonStyle: ButtonStyle {
             .foregroundColor(Theme.cyan)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Theme.cyan.opacity(0.4), lineWidth: 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Theme.cyan.opacity(configuration.isPressed ? 0.1 : 0.03))
-                    )
-            )
+            .glassEffect(.regular.tint(Theme.cyan.opacity(configuration.isPressed ? 0.15 : 0.05)), in: .rect(cornerRadius: 12))
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
@@ -91,14 +76,7 @@ struct DestructiveButtonStyle: ButtonStyle {
             .foregroundColor(Theme.error)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Theme.error.opacity(0.4), lineWidth: 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Theme.error.opacity(configuration.isPressed ? 0.15 : 0.05))
-                    )
-            )
+            .glassEffect(.regular.tint(Theme.error.opacity(configuration.isPressed ? 0.15 : 0.05)), in: .rect(cornerRadius: 12))
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
@@ -112,14 +90,7 @@ struct ThemedTextFieldStyle: TextFieldStyle {
             .font(Theme.monoFont(15))
             .foregroundColor(Theme.textPrimary)
             .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Theme.surfaceDark)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Theme.cyan.opacity(0.2), lineWidth: 1)
-                    )
-            )
+            .glassEffect(.regular.tint(Theme.cyan.opacity(0.05)), in: .rect(cornerRadius: 12))
             .tint(Theme.cyan)
     }
 }

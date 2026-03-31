@@ -14,8 +14,6 @@ struct FileBrowserView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
-            GridOverlay(lineSpacing: 48, lineOpacity: 0.02)
-                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
@@ -97,7 +95,7 @@ struct FileBrowserView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Theme.surfaceDark.opacity(0.9))
+        .glassEffect(.regular.tint(Theme.cyan.opacity(0.03)))
     }
 
     // MARK: - File List

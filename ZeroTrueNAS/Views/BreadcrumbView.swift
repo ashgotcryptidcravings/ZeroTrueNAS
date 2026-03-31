@@ -44,6 +44,6 @@ struct BreadcrumbView: View {
                 }
             }
         }
-        .background(Theme.surfaceDark.opacity(0.8))
+        .background(Theme.background)
     }
 }

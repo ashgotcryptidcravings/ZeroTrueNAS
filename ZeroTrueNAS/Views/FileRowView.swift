@@ -157,6 +157,6 @@ struct FileRowView: View {
     }
 
     private var iconBackground: Color {
-        iconColor.opacity(0.1)
+        iconColor.opacity(0.08)
     }
 }

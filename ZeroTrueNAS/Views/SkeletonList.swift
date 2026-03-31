@@ -7,18 +7,18 @@ struct SkeletonRow: View {
         HStack(spacing: 14) {
             // Icon placeholder
             RoundedRectangle(cornerRadius: 8)
-                .fill(Theme.surfaceLight)
+                .fill(Theme.surfaceLight.opacity(0.5))
                 .frame(width: 40, height: 40)
 
             VStack(alignment: .leading, spacing: 8) {
                 // Name placeholder
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Theme.surfaceLight)
+                    .fill(Theme.surfaceLight.opacity(0.5))
                     .frame(width: CGFloat.random(in: 100...200), height: 12)
 
                 // Meta placeholder
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Theme.surfaceLight.opacity(0.6))
+                    .fill(Theme.surfaceLight.opacity(0.3))
                     .frame(width: CGFloat.random(in: 60...120), height: 10)
             }
 

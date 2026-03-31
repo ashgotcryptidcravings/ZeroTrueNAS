@@ -59,7 +59,7 @@ struct VideoPlayerView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(10)
-                        .background(Circle().fill(.black.opacity(0.5)))
+                        .glassEffect(.regular, in: .circle)
                 }
 
                 Spacer()

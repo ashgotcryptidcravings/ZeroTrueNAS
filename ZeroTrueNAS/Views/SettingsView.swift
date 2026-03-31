@@ -16,8 +16,6 @@ struct SettingsView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
-            GridOverlay(lineSpacing: 48, lineOpacity: 0.02)
-                .ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -57,7 +55,7 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(.vertical, 12)
-        .background(Theme.surfaceDark.opacity(0.9))
+        .glassEffect(.regular.tint(Theme.cyan.opacity(0.03)))
     }
 
     // MARK: - Connection
@@ -283,13 +281,6 @@ struct SettingsCard<Content: View>: View {
             content
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Theme.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Theme.surfaceLight, lineWidth: 1)
-                )
-        )
+        .glassEffect(.regular.tint(Theme.cyan.opacity(0.03)), in: .rect(cornerRadius: 16))
     }
 }

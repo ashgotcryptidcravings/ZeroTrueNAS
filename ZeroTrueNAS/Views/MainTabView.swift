@@ -30,27 +30,8 @@ struct MainTabView: View {
         .padding(.horizontal, 24)
         .padding(.top, 12)
         .padding(.bottom, 28)
-        .background(
-            ZStack {
-                Theme.surfaceDark
-                    .shadow(color: .black.opacity(0.5), radius: 20, y: -8)
-
-                // Top border glow
-                VStack {
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Theme.cyan.opacity(0.2), Theme.purple.opacity(0.1)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(height: 1)
-                    Spacer()
-                }
-            }
-            .ignoresSafeArea()
-        )
+        .glassEffect(.regular.tint(Theme.cyan.opacity(0.05)), in: .rect(cornerRadii: .init(topLeading: 20, topTrailing: 20)))
+        .ignoresSafeArea(edges: .bottom)
     }
 
     private func tabButton(icon: String, label: String, index: Int) -> some View {

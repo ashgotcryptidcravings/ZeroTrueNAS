@@ -21,8 +21,6 @@ struct AudioPlayerView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
-            GridOverlay(lineSpacing: 48, lineOpacity: 0.02)
-                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Top bar with close button
@@ -32,7 +30,7 @@ struct AudioPlayerView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(10)
-                            .background(Circle().fill(Theme.surfaceLight))
+                            .glassEffect(.regular, in: .circle)
                     }
                     Spacer()
                 }
@@ -88,19 +86,10 @@ struct AudioPlayerView: View {
 
     private var albumArt: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(
-                    LinearGradient(
-                        colors: [Theme.purple.opacity(0.3), Theme.cyan.opacity(0.15)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.clear)
                 .frame(width: 200, height: 200)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Theme.purple.opacity(0.3), lineWidth: 1)
-                )
+                .glassEffect(.regular.tint(Theme.purple.opacity(0.15)), in: .rect(cornerRadius: 24))
 
             VStack(spacing: 12) {
                 Image(systemName: "music.note")
@@ -113,7 +102,6 @@ struct AudioPlayerView: View {
                     .foregroundColor(Theme.purple.opacity(0.7))
             }
         }
-        .glow(color: Theme.purple, radius: isPlaying ? 16 : 6)
         .scaleEffect(isPlaying ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isPlaying)
     }

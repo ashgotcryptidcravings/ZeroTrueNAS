@@ -12,10 +12,6 @@ struct LoginView: View {
         ZStack {
             // Background
             Theme.background.ignoresSafeArea()
-            GridOverlay(lineSpacing: 40, lineOpacity: 0.03)
-                .ignoresSafeArea()
-            ScanlineOverlay()
-                .ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -65,15 +61,14 @@ struct LoginView: View {
             // Geometric logo
             ZStack {
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Theme.cyan.opacity(0.3), lineWidth: 1)
+                    .fill(.clear)
                     .frame(width: 80, height: 80)
                     .rotationEffect(.degrees(45))
-                    .glow(radius: 12)
+                    .glassEffect(.regular.tint(Theme.cyan.opacity(0.15)), in: .rect(cornerRadius: 16))
 
                 Image(systemName: "externaldrive.connected.to.line.below.fill")
                     .font(.system(size: 32, weight: .light))
                     .foregroundColor(Theme.cyan)
-                    .glow(radius: 6)
             }
             .frame(height: 100)
 
@@ -92,7 +87,7 @@ struct LoginView: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [Theme.cyan.opacity(0), Theme.cyan.opacity(0.5)],
+                            colors: [Theme.cyan.opacity(0), Theme.cyan.opacity(0.3)],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -100,14 +95,13 @@ struct LoginView: View {
                     .frame(height: 1)
 
                 Circle()
-                    .fill(Theme.cyan)
+                    .fill(Theme.cyan.opacity(0.6))
                     .frame(width: 4, height: 4)
-                    .glow(radius: 4)
 
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [Theme.cyan.opacity(0.5), Theme.cyan.opacity(0)],
+                            colors: [Theme.cyan.opacity(0.3), Theme.cyan.opacity(0)],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -162,14 +156,7 @@ struct LoginView: View {
                     .padding(.trailing, 4)
                 }
                 .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Theme.surfaceDark)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Theme.cyan.opacity(0.2), lineWidth: 1)
-                        )
-                )
+                .glassEffect(.regular.tint(Theme.cyan.opacity(0.05)), in: .rect(cornerRadius: 12))
             }
         }
     }
