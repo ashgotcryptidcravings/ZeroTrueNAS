@@ -96,7 +96,8 @@ struct FileItem: Identifiable, Codable, Hashable {
     }
 
     var isVideo: Bool {
-        ["mp4", "mov", "m4v"].contains(fileExtension)
+        ["mp4", "mov", "m4v", "mkv", "avi", "wmv", "flv", "webm", "ts", "mts",
+         "m2ts", "vob", "mpg", "mpeg", "3gp", "3g2", "ogv", "f4v", "asf", "divx"].contains(fileExtension)
     }
 
     var isAudio: Bool {
@@ -117,18 +118,21 @@ struct FileItem: Identifiable, Codable, Hashable {
          "java", "kt", "sh", "bash", "zsh", "css", "html"].contains(fileExtension)
     }
 
+    var isUnknown: Bool {
+        !isDirectory && !isImage && !isText && !isVideo && !isAudio && !isPDF && !isArchive && !isCode
+    }
+
     var iconName: String {
         if isDirectory { return "folder.fill" }
         if isImage { return "photo.fill" }
         if isVideo { return "film.fill" }
         if isAudio { return "music.note" }
+        if isPDF { return "doc.richtext.fill" }
         if isArchive { return "doc.zipper" }
         if isCode { return "chevron.left.forwardslash.chevron.right" }
         if isText { return "doc.text.fill" }
-        switch fileExtension {
-        case "pdf": return "doc.richtext.fill"
-        default: return "doc.fill"
-        }
+        if isUnknown { return "questionmark.square.dashed" }
+        return "doc.fill"
     }
 
     static let mockFiles: [FileItem] = [

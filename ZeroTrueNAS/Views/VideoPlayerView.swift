@@ -12,12 +12,15 @@ struct VideoPlayerView: View {
     @State private var duration: Double = 0
     @State private var showControls = true
     @State private var hideControlsTask: Task<Void, Never>?
+    @State private var playbackError: String?
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let player = player {
+            if let error = playbackError {
+                unsupportedFormatView(error)
+            } else if let player = player {
                 VideoPlayerRepresentable(player: player)
                     .ignoresSafeArea()
                     .onTapGesture {
@@ -136,6 +139,48 @@ struct VideoPlayerView: View {
 
     // MARK: - Helpers
 
+    private var fileExtension: String {
+        (filename as NSString).pathExtension.lowercased()
+    }
+
+    private func unsupportedFormatView(_ error: String) -> some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(Theme.unknown.opacity(0.15))
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(Theme.unknown)
+            }
+
+            Text("Unsupported Format")
+                .font(Theme.headerFont(20))
+                .foregroundColor(Theme.textPrimary)
+
+            Text(".\(fileExtension.uppercased()) files cannot be played natively on iOS.")
+                .font(Theme.monoFont(13))
+                .foregroundColor(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Text(error)
+                .font(Theme.monoFont(11))
+                .foregroundColor(Theme.textMuted)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Button { dismiss() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "xmark")
+                    Text("CLOSE")
+                }
+            }
+            .buttonStyle(GhostButtonStyle())
+        }
+    }
+
     private func setupPlayer() {
         let avPlayer = AVPlayer(url: fileURL)
         player = avPlayer
@@ -145,6 +190,27 @@ struct VideoPlayerView: View {
             currentTime = time.seconds
             if let dur = avPlayer.currentItem?.duration.seconds, dur.isFinite {
                 duration = dur
+            }
+        }
+
+        // Observe playback errors
+        if let item = avPlayer.currentItem {
+            NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemFailedToPlayToEndTime,
+                object: item,
+                queue: .main
+            ) { notification in
+                if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
+                    playbackError = error.localizedDescription
+                }
+            }
+
+            // Also observe the item status for immediate load failures
+            item.addObserver(AVPlayerItemObserver.shared, forKeyPath: "status", options: [.new], context: nil)
+            AVPlayerItemObserver.shared.onError = { errorMessage in
+                DispatchQueue.main.async {
+                    playbackError = errorMessage
+                }
             }
         }
 
@@ -160,6 +226,14 @@ struct VideoPlayerView: View {
         avPlayer.play()
         isPlaying = true
         scheduleHideControls()
+
+        // Check for load failure after a short delay
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if let item = avPlayer.currentItem, item.status == .failed {
+                playbackError = item.error?.localizedDescription ?? "This format is not supported"
+            }
+        }
     }
 
     private func togglePlayback() {
@@ -212,5 +286,19 @@ struct VideoPlayerRepresentable: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
         uiViewController.player = player
+    }
+}
+
+// MARK: - AVPlayerItem KVO Observer
+
+class AVPlayerItemObserver: NSObject {
+    static let shared = AVPlayerItemObserver()
+    var onError: ((String) -> Void)?
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "status", let item = object as? AVPlayerItem, item.status == .failed {
+            let message = item.error?.localizedDescription ?? "This format is not supported"
+            onError?(message)
+        }
     }
 }

@@ -84,6 +84,25 @@ struct FileRowView: View {
                         RoundedRectangle(cornerRadius: 3)
                             .fill(Theme.error.opacity(0.12))
                     )
+            } else if item.isUnknown {
+                HStack(spacing: 3) {
+                    Image(systemName: "questionmark")
+                        .font(.system(size: 7, weight: .bold))
+                    Text(item.fileExtension.isEmpty ? "UNKNOWN" : ".\(item.fileExtension.uppercased())")
+                        .font(Theme.monoFont(8))
+                        .tracking(1)
+                }
+                .foregroundColor(Theme.unknown)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(Theme.unknown.opacity(0.4), lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Theme.unknown.opacity(0.08))
+                        )
+                )
             }
 
             // Chevron for directories
@@ -133,6 +152,7 @@ struct FileRowView: View {
         if item.isCode { return Theme.success }
         if item.isText { return Theme.success }
         if item.isArchive { return Theme.textSecondary }
+        if item.isUnknown { return Theme.unknown }
         return Theme.textSecondary
     }
 

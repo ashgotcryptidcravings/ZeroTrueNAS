@@ -512,6 +512,7 @@ struct FileDetailView: View {
         if file.isAudio { return Theme.warning }
         if file.isPDF { return Theme.error }
         if file.isText { return Theme.success }
+        if file.isUnknown { return Theme.unknown }
         return Theme.cyan
     }
 }

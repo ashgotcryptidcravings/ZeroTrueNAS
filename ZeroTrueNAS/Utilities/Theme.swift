@@ -21,6 +21,7 @@ enum Theme {
     static let success = Color(red: 0.0, green: 0.878, blue: 0.553)             // #00e08d
     static let error = Color(red: 1.0, green: 0.29, blue: 0.38)                 // #ff4a61
     static let warning = Color(red: 1.0, green: 0.753, blue: 0.0)               // #ffc000
+    static let unknown = Color(red: 1.0, green: 0.6, blue: 0.2)                 // #ff9933
 
     // Fonts
     static func monoFont(_ size: CGFloat) -> Font {
