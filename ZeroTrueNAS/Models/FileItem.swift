@@ -104,6 +104,10 @@ struct FileItem: Identifiable, Codable, Hashable {
          "wma", "opus", "caf", "mp2", "ac3"].contains(fileExtension)
     }
 
+    var isPDF: Bool {
+        fileExtension == "pdf"
+    }
+
     var isArchive: Bool {
         ["zip", "tar", "gz", "7z", "rar", "bz2", "xz"].contains(fileExtension)
     }

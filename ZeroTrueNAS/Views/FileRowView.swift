@@ -73,6 +73,17 @@ struct FileRowView: View {
                         RoundedRectangle(cornerRadius: 3)
                             .fill(Theme.warning.opacity(0.12))
                     )
+            } else if item.isPDF {
+                Text("PDF")
+                    .font(Theme.monoFont(8))
+                    .tracking(1)
+                    .foregroundColor(Theme.error)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Theme.error.opacity(0.12))
+                    )
             }
 
             // Chevron for directories
@@ -118,6 +129,7 @@ struct FileRowView: View {
         if item.isImage { return Theme.purple }
         if item.isVideo { return Theme.purple }
         if item.isAudio { return Theme.warning }
+        if item.isPDF { return Theme.error }
         if item.isCode { return Theme.success }
         if item.isText { return Theme.success }
         if item.isArchive { return Theme.textSecondary }

@@ -39,6 +39,7 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 24)
+                    .padding(.bottom, 100)
                 }
             }
         }
@@ -205,6 +206,28 @@ struct SettingsView: View {
                     aboutRow("Target", "TrueNAS Goldeye")
                     aboutRow("API", "REST v2.0")
                     aboutRow("Server", ServerConfig.savedAddress)
+                }
+
+                Divider()
+                    .background(Theme.surfaceLight)
+                    .padding(.vertical, 8)
+
+                Button {
+                    if let url = URL(string: "https://github.com/ashgotcryptidcravings/ZeroTrueNAS") {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left.forwardslash.chevron.right")
+                            .font(.system(size: 14))
+                        Text("VIEW ON GITHUB")
+                            .font(Theme.monoFont(12))
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11))
+                    }
+                    .foregroundColor(Theme.cyan)
+                    .padding(.vertical, 4)
                 }
             }
         }

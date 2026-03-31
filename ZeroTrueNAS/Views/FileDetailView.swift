@@ -17,6 +17,7 @@ struct FileDetailView: View {
     @State private var showAudioPlayer = false
     @State private var showTextEditor = false
     @State private var showImageCrop = false
+    @State private var showPDFViewer = false
     @State private var downloadTask: Task<Void, Never>?
 
     var body: some View {
@@ -49,6 +50,8 @@ struct FileDetailView: View {
                         .padding(.horizontal)
                 } else if file.isAudio {
                     audioPreviewPlaceholder
+                } else if file.isPDF, let data = downloadedData {
+                    pdfPreview(data: data)
                 } else if isDownloading {
                     Spacer()
                     LoadingIndicator(label: file.isVideo ? "Preparing video..." : "Downloading...")
@@ -96,6 +99,11 @@ struct FileDetailView: View {
             if let data = downloadedData {
                 ImageCropView(imageData: data, filePath: file.path, filename: file.name)
                     .environmentObject(service)
+            }
+        }
+        .fullScreenCover(isPresented: $showPDFViewer) {
+            if let data = downloadedData {
+                PDFViewerView(data: data, filename: file.name)
             }
         }
         .task {
@@ -240,6 +248,24 @@ struct FileDetailView: View {
                 }
                 .buttonStyle(CyanButtonStyle())
                 .disabled(isDownloading)
+            } else if file.isPDF {
+                Button {
+                    Task { await openPDF() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Theme.background))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "doc.richtext.fill")
+                        }
+                        Text(isDownloading ? "LOADING..." : "VIEW PDF")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(CyanButtonStyle())
+                .disabled(isDownloading)
             } else if file.isText {
                 Button {
                     Task { await openTextEditor() }
@@ -307,7 +333,7 @@ struct FileDetailView: View {
                 }
 
                 // Download (for media that has View/Play/Edit as primary)
-                if file.isImage || file.isVideo || file.isAudio || file.isText {
+                if file.isImage || file.isVideo || file.isAudio || file.isText || file.isPDF {
                     Button {
                         Task { await downloadAndSave() }
                     } label: {
@@ -328,7 +354,7 @@ struct FileDetailView: View {
     // MARK: - File Operations
 
     private func autoPreview() async {
-        if file.isImage || file.isText {
+        if file.isImage || file.isText || file.isPDF {
             await fetchFileData()
         }
     }
@@ -404,6 +430,47 @@ struct FileDetailView: View {
         }
     }
 
+    private func openPDF() async {
+        if downloadedData == nil {
+            await fetchFileData()
+        }
+        if downloadedData != nil {
+            showPDFViewer = true
+        }
+    }
+
+    private func pdfPreview(data: Data) -> some View {
+        VStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Theme.surface)
+                    .frame(height: 200)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Theme.cyan.opacity(0.2), lineWidth: 1)
+                    )
+
+                VStack(spacing: 8) {
+                    Image(systemName: "doc.richtext.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(Theme.cyan)
+
+                    Text("PDF Document")
+                        .font(Theme.monoFont(13))
+                        .foregroundColor(Theme.textSecondary)
+
+                    Text("Tap VIEW PDF to open")
+                        .font(Theme.monoFont(11))
+                        .foregroundColor(Theme.textMuted)
+                }
+            }
+            .padding(.horizontal)
+            .onTapGesture {
+                showPDFViewer = true
+            }
+        }
+    }
+
     private func downloadToTemp() async {
         isDownloading = true
         errorMessage = nil
@@ -443,6 +510,7 @@ struct FileDetailView: View {
         if file.isImage { return Theme.purple }
         if file.isVideo { return Theme.purple }
         if file.isAudio { return Theme.warning }
+        if file.isPDF { return Theme.error }
         if file.isText { return Theme.success }
         return Theme.cyan
     }

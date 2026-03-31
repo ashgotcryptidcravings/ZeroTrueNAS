@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import MediaPlayer
 
 struct AudioPlayerView: View {
     @Environment(\.dismiss) var dismiss
@@ -79,6 +80,7 @@ struct AudioPlayerView: View {
         .onDisappear {
             timer?.invalidate()
             player?.stop()
+            clearNowPlaying()
         }
     }
 
@@ -270,14 +272,19 @@ struct AudioPlayerView: View {
             duration = audioPlayer.duration
             player = audioPlayer
 
+            setupRemoteCommands()
+            updateNowPlaying()
+
             // Start time update timer
             timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 guard let p = player else { return }
                 currentTime = p.currentTime
+                updateNowPlayingTime()
                 if !p.isPlaying && isPlaying && currentTime >= duration - 0.1 {
                     isPlaying = false
                     currentTime = 0
                     p.currentTime = 0
+                    updateNowPlaying()
                 }
             }
         } catch {
@@ -298,6 +305,7 @@ struct AudioPlayerView: View {
             player.play()
         }
         isPlaying.toggle()
+        updateNowPlaying()
     }
 
     private func skip(seconds: Double) {
@@ -305,6 +313,83 @@ struct AudioPlayerView: View {
         let newTime = max(0, min(duration, player.currentTime + seconds))
         player.currentTime = newTime
         currentTime = newTime
+        updateNowPlayingTime()
+    }
+
+    // MARK: - Now Playing / Control Center
+
+    private func setupRemoteCommands() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        commandCenter.playCommand.addTarget { _ in
+            guard let p = player, !p.isPlaying else { return .commandFailed }
+            p.play()
+            isPlaying = true
+            updateNowPlaying()
+            return .success
+        }
+
+        commandCenter.pauseCommand.addTarget { _ in
+            guard let p = player, p.isPlaying else { return .commandFailed }
+            p.pause()
+            isPlaying = false
+            updateNowPlaying()
+            return .success
+        }
+
+        commandCenter.togglePlayPauseCommand.addTarget { _ in
+            togglePlayback()
+            return .success
+        }
+
+        commandCenter.skipForwardCommand.preferredIntervals = [30]
+        commandCenter.skipForwardCommand.addTarget { event in
+            guard let e = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            skip(seconds: e.interval)
+            return .success
+        }
+
+        commandCenter.skipBackwardCommand.preferredIntervals = [15]
+        commandCenter.skipBackwardCommand.addTarget { event in
+            guard let e = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            skip(seconds: -e.interval)
+            return .success
+        }
+
+        commandCenter.changePlaybackPositionCommand.addTarget { event in
+            guard let e = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            player?.currentTime = e.positionTime
+            currentTime = e.positionTime
+            updateNowPlayingTime()
+            return .success
+        }
+    }
+
+    private func updateNowPlaying() {
+        var info = [String: Any]()
+        info[MPMediaItemPropertyTitle] = filename
+        info[MPMediaItemPropertyPlaybackDuration] = duration
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    private func updateNowPlayingTime() {
+        guard var info = MPNowPlayingInfoCenter.default().nowPlayingInfo else { return }
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    private func clearNowPlaying() {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.togglePlayPauseCommand.removeTarget(nil)
+        commandCenter.skipForwardCommand.removeTarget(nil)
+        commandCenter.skipBackwardCommand.removeTarget(nil)
+        commandCenter.changePlaybackPositionCommand.removeTarget(nil)
     }
 
     private func formatTime(_ seconds: Double) -> String {

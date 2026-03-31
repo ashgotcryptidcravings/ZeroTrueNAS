@@ -103,26 +103,27 @@ struct FileBrowserView: View {
     // MARK: - File List
 
     private var fileList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(files) { file in
-                    Button {
+        List {
+            ForEach(files) { file in
+                FileRowView(item: file)
+                    .environmentObject(service)
+                    .listRowBackground(Theme.background)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparatorTint(Theme.surfaceLight.opacity(0.5))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
                         handleFileTap(file)
-                    } label: {
-                        FileRowView(item: file)
-                            .environmentObject(service)
                     }
-                    .buttonStyle(.plain)
-
-                    if file.id != files.last?.id {
-                        Divider()
-                            .background(Theme.surfaceLight.opacity(0.5))
-                            .padding(.leading, 70)
-                    }
-                }
             }
-            .padding(.bottom, 20)
+
+            // Extra space so the tab bar doesn't cover the last items
+            Color.clear
+                .frame(height: 80)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .refreshable {
             await loadDirectory()
         }
