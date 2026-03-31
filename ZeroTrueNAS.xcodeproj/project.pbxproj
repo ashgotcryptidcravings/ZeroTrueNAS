@@ -34,6 +34,7 @@
 		AA000025 /* TextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000025 /* TextEditorView.swift */; };
 		AA000026 /* ImageCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000026 /* ImageCropView.swift */; };
 		AA000027 /* AudioPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000027 /* AudioPlayerView.swift */; };
+		AA000028 /* PDFViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000028 /* PDFViewerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +65,7 @@
 		AB000025 /* TextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditorView.swift; sourceTree = "<group>"; };
 		AB000026 /* ImageCropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCropView.swift; sourceTree = "<group>"; };
 		AB000027 /* AudioPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerView.swift; sourceTree = "<group>"; };
+		AB000028 /* PDFViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFViewerView.swift; sourceTree = "<group>"; };
 		AB000030 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AC000001 /* ZeroTrueNAS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZeroTrueNAS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -132,6 +134,7 @@
 				AB000025 /* TextEditorView.swift */,
 				AB000026 /* ImageCropView.swift */,
 				AB000027 /* AudioPlayerView.swift */,
+				AB000028 /* PDFViewerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -257,6 +260,7 @@
 				AA000025 /* TextEditorView.swift in Sources */,
 				AA000026 /* ImageCropView.swift in Sources */,
 				AA000027 /* AudioPlayerView.swift in Sources */,
+				AA000028 /* PDFViewerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
